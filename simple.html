@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>全国高専マップ - deck.gl version</title>
+</head>
+<body style="background-color: #224;">
+<script type="module">
+import { deck } from 'https://code4fukui.github.io/deck-es/deck.js';
+import { GsiTerrainLayer } from 'https://code4fukui.github.io/deckgl-gsi-terrain-layer/index.js';
+import { CSV } from "https://js.sabae.cc/CSV.js";
+
+const url = "https://codeforkosen.github.io/kosen-opendata/data/kosen_campus.csv";
+const data = await CSV.fetchJSON(url);
+data.forEach(d => d.coordinates = [parseFloat(d.lng), parseFloat(d.lat)]);
+
+const layer = new deck.ScenegraphLayer({
+  id: 'scenegraph-layer',
+  data,
+  pickable: true,
+  scenegraph: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF-Binary/BoxAnimated.glb',
+  getPosition: d => d.coordinates,
+  getOrientation: d => [0, Math.random() * 180, 90],
+  _animations: { '*': { speed: 5 } },
+  sizeScale: 5000,
+  _lighting: 'pbr',
+  onClick: e => window.open(e.object.URL, "_blank"),
+});
+
+new deck.Deck({
+  initialViewState: {
+    longitude: 135.98,
+    latitude: 35.75,
+    zoom: 6,
+    bearing: 20,
+    pitch: 70,
+    maxPitch: 85,
+  },
+  controller: true,
+  layers: [layer, new GsiTerrainLayer()],
+});
+</script>
+</body>
+</html>
