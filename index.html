@@ -1,15 +1,18 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>全国高専マップ - deck.gl version</title>
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>福井観光エリアマップ by ふくいドットコム</title>
 </head>
-<body style="background-color: #224;">
+<body style="background-color: #224; margin: 0;">
 <script type="module">
-import { deck } from 'https://code4fukui.github.io/deck-es/deck.js';
+import { deck as deckgl } from 'https://code4fukui.github.io/deck-es/deck.js';
 import { GsiTerrainLayer } from 'https://code4fukui.github.io/deckgl-gsi-terrain-layer/index.js';
 import { CSV } from "https://js.sabae.cc/CSV.js";
 
-const url = "https://codeforkosen.github.io/kosen-opendata/data/kosen_campus.csv";
+const url = "https://code4fukui.github.io/fukui-kanko-survey/area.csv";
 const data = await CSV.fetchJSON(url);
-data.forEach(d => d.coordinates = [parseFloat(d.lng), parseFloat(d.lat)]);
+data.forEach(d => {
+  d.coordinates = [parseFloat(d.lng || d.経度), parseFloat(d.lat || d.緯度)];
+  d.出典 = "福井県 観光/旅行サイト - ふくいドットコム";
+});
 
 const tooltipHandler = (e) => {
   if (!e || !e.object) {
@@ -17,9 +20,12 @@ const tooltipHandler = (e) => {
   }
   const obj = e.object;
   const trs = Object.keys(obj)
-    .filter(key => obj[key])
-    .map(key => `<tr><th style="text-align:right">${key}</th><td>${obj[key]}</td></tr>`);
-  const html = ["<table>", ...trs, "</table>"].join("");
+    .filter(key => key != "coordinates" && obj[key])
+    .map(key => `<tr>
+        <th style="text-align:right;white-space:nowrap;">${key}</th>
+        <td style="white-space:pre-wrap;">${obj[key]}</td>
+      </tr>`);
+  const html = ["<table style='max-width:400px'>", ...trs, "</table>"].join("");
   return {
     html,
     style: {
@@ -29,26 +35,31 @@ const tooltipHandler = (e) => {
 };
 
 let isHovering = false;
-const layer = new deck.ScenegraphLayer({
+const layer = new deckgl.ScenegraphLayer({
   id: 'scenegraph-layer',
   data,
   pickable: true,
   scenegraph: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF-Binary/BoxAnimated.glb',
   getPosition: d => d.coordinates,
-  getOrientation: d => [0, Math.random() * 180, 90],
-  _animations: { '*': { speed: 5 } },
-  sizeScale: 5000,
+  //getOrientation: d => [0, Math.random() * 180, 90],
+  getOrientation: d => [0, 0, 90],
+  _animations: { '*': { speed: 4 } },
+  sizeScale: 1200,
   _lighting: 'pbr',
-  onClick: e => window.open(e.object.URL, "_blank"),
+  onClick: e => {
+    const no = parseInt(e.object.親番号) - 300000;
+    const url = `https://code4fukui.github.io/fukui-kanko-stat/comment.html#${no},0,0,0`;
+    window.open(url, "_blank")
+  },
 });
 
-new deck.Deck({
+const deck = new deckgl.Deck({
   initialViewState: {
-    longitude: 135.98,
-    latitude: 35.75,
-    zoom: 6,
-    bearing: 20,
-    pitch: 70,
+    longitude: 136.01960354808725,
+    latitude: 35.758718716276825,
+    zoom: 8.661492822263341,
+    bearing: -8.010610079575596,
+    pitch: 27.73953488372093,
     maxPitch: 85,
   },
   controller: true,
@@ -56,7 +67,12 @@ new deck.Deck({
   onHover: e => isHovering = Boolean(e.object),
   getCursor: e => e.isDragging ? 'grabbing' : (isHovering ? 'pointer' : 'grab'),
   getTooltip: tooltipHandler,
+  onViewStateChange: (e) => {
+    const st = e.viewState;
+    console.log(st);
+  },
 });
+
 </script>
 </body>
 </html>
